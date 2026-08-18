@@ -57,14 +57,13 @@ else ()
       OUTPUT_VARIABLE GIT_STATUS
       OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-    string(FIND ${GIT_STATUS} "..." START_TRACKED)
-    if (NOT START_TRACKED EQUAL -1)
-      string(FIND ${GIT_STATUS} "/" END_TRACKED)
-      math(EXPR START_TRACKED "${START_TRACKED}+3")
-      math(EXPR END_TRACKED "${END_TRACKED}-${START_TRACKED}")
-      string(SUBSTRING ${GIT_STATUS} ${START_TRACKED} ${END_TRACKED}
-                       GIT_REPOSITORY_REMOTE
-      )
+    # Extract the remote from "## local...remote/branch".  Looking for the
+    # first slash in the complete status line is incorrect when the local
+    # branch itself contains a slash.
+    string(REGEX MATCH "\\.\\.\\.([^/]+)/" GIT_UPSTREAM_MATCH
+                 "${GIT_STATUS}")
+    if (GIT_UPSTREAM_MATCH)
+      set(GIT_REPOSITORY_REMOTE "${CMAKE_MATCH_1}")
       message(STATUS "${CMLOC}GIT_REPOSITORY_REMOTE: ${GIT_REPOSITORY_REMOTE}")
       execute_process(
         COMMAND git remote get-url ${GIT_REPOSITORY_REMOTE}

@@ -27,6 +27,12 @@
 
 #include "wx/wxprec.h"
 
+#include <cinttypes>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <string>
+
 #ifndef  WX_PRECOMP
   #include "wx/wx.h"
   #include <wx/glcanvas.h>
@@ -36,6 +42,9 @@
 #include <wx/fileconf.h>
 
 #include "climatology_pi.h"
+#include "ClimatologyAPI.h"
+
+#include <wx/ffile.h>
 #include "icons.h"
 #include "ClimatologyDialog.h"
 
@@ -56,6 +65,20 @@ extern "C" DECL_EXP void destroy_pi(opencpn_plugin* p)
 
 static climatology_pi *s_climatology_pi;
 
+template<typename Function>
+static std::string FunctionPointerText(Function function)
+{
+    static_assert(sizeof(Function) <= sizeof(std::uintptr_t),
+                  "function pointer does not fit the legacy message representation");
+    if(function == nullptr)
+        return "0x0";
+    std::uintptr_t address = 0;
+    std::memcpy(&address, &function, sizeof function);
+    char text[2 + sizeof(address) * 2 + 1];
+    std::snprintf(text, sizeof text, "0x%" PRIxPTR, address);
+    return text;
+}
+
 wxString ClimatologyDataDirectory()
 {
     wxFileName dir(GetPluginDataDir("climatology_pi"), "");
@@ -65,6 +88,24 @@ wxString ClimatologyDataDirectory()
         dir.Mkdir(wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
 
     return dir.GetFullPath();
+}
+
+static bool ReadDatasetManifest(Json::Value &manifest)
+{
+    wxFFile file(ClimatologyDataDirectory() + "dataset-manifest.json", "rb");
+    wxString contents;
+    if(!file.IsOpened() || !file.ReadAll(&contents))
+        return false;
+    Json::Reader reader;
+    return reader.parse(std::string(contents.utf8_str()), manifest, false) && manifest.isObject();
+}
+
+wxString ClimatologyDatasetVersion()
+{
+    Json::Value manifest;
+    if(ReadDatasetManifest(manifest) && manifest["dataset_version"].isString())
+        return wxString::FromUTF8(manifest["dataset_version"].asCString());
+    return _("legacy/unversioned");
 }
 
 
@@ -254,7 +295,7 @@ int climatology_pi::GetToolbarToolCount(void)
       return 1;
 }
 
-static bool ClimatologyData(int setting, wxDateTime &date, double lat, double lon,
+static bool ClimatologyData(int setting, const wxDateTime &date, double lat, double lon,
                             double &dir, double &speed)
 {
     s_climatology_pi->CreateOverlayFactory();
@@ -273,7 +314,7 @@ static bool ClimatologyData(int setting, wxDateTime &date, double lat, double lo
     return true;
 }
 
-static bool ClimatologyWindAtlasData(wxDateTime &date, double lat, double lon,
+static bool ClimatologyWindAtlasData(const wxDateTime &date, double lat, double lon,
                                      int &count, double *directions, double *speeds,
                                      double &storm, double &calm)
 {
@@ -296,6 +337,11 @@ static int ClimatologyCycloneTrackCrossings(double lat1, double lon1, double lat
     return g_pOverlayFactory->CycloneTrackCrossings(lat1, lon1, lat2, lon2,
                                                     date, dayrange);
 }
+
+// Compile-time guards for the pointer ABI advertised in SendClimatology().
+static ClimatologyDataFunction const checked_climatology_data = &ClimatologyData;
+static ClimatologyWindAtlasFunction const checked_wind_atlas_data = &ClimatologyWindAtlasData;
+static ClimatologyCycloneCrossingsFunction const checked_cyclone_crossings = &ClimatologyCycloneTrackCrossings;
 
 void climatology_pi::OnToolbarToolCallback(int id)
 {
@@ -355,16 +401,23 @@ void climatology_pi::SendClimatology(bool valid)
     Json::Value v;
     v["ClimatologyVersionMajor"] = GetPlugInVersionMajor();
     v["ClimatologyVersionMinor"] = GetPlugInVersionMinor();
+    Json::Value manifest;
+    if(ReadDatasetManifest(manifest)) {
+        v["ClimatologyDatasetVersion"] = manifest.get("dataset_version", "unknown");
+        const Json::Value period = manifest["climatology_period"];
+        v["ClimatologyDatasetPeriodStart"] = period.get("start", "");
+        v["ClimatologyDatasetPeriodEnd"] = period.get("end", "");
+        v["ClimatologyDatasetPeriodKind"] = period.get("kind", "");
+    } else {
+        v["ClimatologyDatasetVersion"] = "legacy/unversioned";
+    }
 
-    char ptr[64];
-    snprintf(ptr, sizeof ptr, "%p", valid ? ClimatologyData : NULL);
-    v["ClimatologyDataPtr"] = ptr;
-
-    snprintf(ptr, sizeof ptr, "%p", valid ? ClimatologyWindAtlasData : NULL);
-    v["ClimatologyWindAtlasDataPtr"] = ptr;
-
-    snprintf(ptr, sizeof ptr, "%p", valid ? ClimatologyCycloneTrackCrossings : NULL);
-    v["ClimatologyCycloneTrackCrossingsPtr"] = ptr;
+    v["ClimatologyDataPtr"] = FunctionPointerText(
+        valid ? ClimatologyData : nullptr);
+    v["ClimatologyWindAtlasDataPtr"] = FunctionPointerText(
+        valid ? ClimatologyWindAtlasData : nullptr);
+    v["ClimatologyCycloneTrackCrossingsPtr"] = FunctionPointerText(
+        valid ? ClimatologyCycloneTrackCrossings : nullptr);
 
     Json::FastWriter writer;
     SendPluginMessage(wxT("CLIMATOLOGY"), writer.write( v ));
