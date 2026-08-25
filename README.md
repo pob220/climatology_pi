@@ -140,7 +140,15 @@ median of its wet source elevations and is then quantised to the historical
 The modern cyclone files use IBTrACS v04r01 main-track positions and
 `USA_WIND`/`USA_PRES`; missing intensity remains missing instead of mixing
 incompatible agency wind-averaging periods. ENSO uses the NOAA CPC ERSSTv6
-ONI table and omits incomplete current-year rows.
+ONI table, omits incomplete current-year rows, and applies CPC's five
+consecutive overlapping-season episode rule. Threshold excursions which are
+too short to qualify are encoded as neutral so the unchanged cyclone runtime
+cannot misclassify them as events.
+
+The additive typed consumer boundary is documented in
+[`docs/CLIMATOLOGY_PROVIDER_API_V1.md`](docs/CLIMATOLOGY_PROVIDER_API_V1.md).
+It currently advertises only the all-years climatology; the research ENSO
+composites are intentionally not production modes.
 
 Observed NASA LIS/OTD HRMC v2.3.2013 lightning (1995–2013) is retained
 byte-for-byte from the historical bundle until a documented, genuinely
@@ -163,8 +171,8 @@ climatology-compare OLD_DATA WORK/dataset \
 climatology-write-provenance REPOSITORY WORK/dataset \
   WORK/dataset/*.gz WORK/dataset/elnino_years.txt \
   WORK/dataset/cyclone-conversion.json \
-  --products tools/climatology_pipeline/metadata/products-2026.1.json \
-  --sources tools/climatology_pipeline/metadata/sources-2026.1.json \
+  --products tools/climatology_pipeline/metadata/products-2026.2.json \
+  --sources tools/climatology_pipeline/metadata/sources-2026.2.json \
   --validation WORK/dataset/dataset-validation.json
 ```
 

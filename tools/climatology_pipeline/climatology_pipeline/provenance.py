@@ -12,7 +12,7 @@ import subprocess
 from typing import Any, Iterable
 
 
-DATASET_VERSION = "ocpn-climatology-2026.1"
+DATASET_VERSION = "ocpn-climatology-2026.2"
 
 
 def sha256(path: str | Path, block_size: int = 1024 * 1024) -> str:

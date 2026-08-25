@@ -138,6 +138,10 @@ accepts major/minor 0.10 through 1.6. Dataset versions use
 `ocpn-climatology-2026.1`) in `dataset-manifest.json`. Binary schema versions
 are separate (`legacy-wind/fefe`, `legacy-current/1`, etc.).
 
+The follow-on `ocpn-climatology-2026.2` changes only the auxiliary ENSO table:
+it fixes structural CPC HTML parsing and applies the official five-season
+episode rule. The modern all-years wind/current/scalar fields remain unchanged.
+
 ### D010 — Reject physically corrupt source reads
 
 An OPeNDAP full-grid OISST read returned syntactically valid arrays filled with
@@ -162,6 +166,15 @@ The released ENSO file ends with a truncated 2014 row containing only three
 monthly values. The historical reader indexed it as though twelve values were
 present. The runtime now rejects incomplete rows, and the generator emits only
 complete, source-attributed years.
+
+### D012a — Preserve CPC episode semantics in the legacy table
+
+The runtime's simple +/-0.5 threshold previously treated isolated seasonal
+excursions as complete El Niño or La Niña episodes. The 2026.2 generator first
+identifies consecutive centre seasons and neutralises threshold runs shorter
+than CPC's five-season duration criterion. This corrects cyclone filtering
+without changing the runtime file layout, thresholds, UI or Weather Routing
+ABI.
 
 ### D013 — Use monthly ERA5 transports for monthly scalar products
 
@@ -405,3 +418,8 @@ report rather than being represented as statistical confidence tests.
    Test-OpenCPN.  Its real 5.14 loader reports the plugin compatible and loads
    the isolated resources without a Climatology error or warning.  Production
    OpenCPN sentinels remain unchanged.
+
+The subsequent 1.6.39.0 development candidate adds the typed all-years query
+boundary and dataset 2026.2 ENSO correction. Its qualification evidence is
+recorded in the modernisation research report and provider API document; this
+paragraph does not claim installation or promotion of that candidate.

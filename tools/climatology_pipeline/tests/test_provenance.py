@@ -24,7 +24,7 @@ def test_manifest_has_checksums_and_two_renderings(tmp_path) -> None:
     assert manifest["climatology_period"]["kind"] == "multi-product-target"
     write_manifest(tmp_path, manifest)
     loaded = json.loads((tmp_path / "dataset-manifest.json").read_text())
-    assert loaded["dataset_version"] == "ocpn-climatology-2026.1"
+    assert loaded["dataset_version"] == "ocpn-climatology-2026.2"
     assert "earthaccess" in loaded["software"]
     assert "icechunk" in loaded["software"]
     assert loaded["validation"]["summary"]["advisory_checks_passed"] == 4
@@ -37,10 +37,10 @@ def test_manifest_has_checksums_and_two_renderings(tmp_path) -> None:
 def test_release_metadata_names_every_packaged_product() -> None:
     root = Path(__file__).resolve().parents[1]
     products = json.loads(
-        (root / "metadata/products-2026.1.json").read_text(encoding="utf-8")
+        (root / "metadata/products-2026.2.json").read_text(encoding="utf-8")
     )
     sources = json.loads(
-        (root / "metadata/sources-2026.1.json").read_text(encoding="utf-8")
+        (root / "metadata/sources-2026.2.json").read_text(encoding="utf-8")
     )
     names = {product["name"] for product in products}
     assert names == {

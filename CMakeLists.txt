@@ -71,9 +71,9 @@ set(LONG_DESCRIPTION "Climatology provides overlay capabilities for historical w
 
 set(VERSION_MAJOR "1")
 set(VERSION_MINOR "6")
-set(VERSION_PATCH "38")
+set(VERSION_PATCH "39")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "17/08/2026")#DD/MM/YYYY format
+set(VERSION_DATE  "25/08/2026")#DD/MM/YYYY format
 set(OCPN_MIN_VERSION "ov58")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -82,7 +82,7 @@ set(OCPN_API_VERSION_MINOR "18")
 set(WX_VER "32")
 set(WX_VER_PATCH "8")
 
-set(TP_COMMENT "  * Legacy-compatible modern dataset pipeline and runtime correctness fixes")
+set(TP_COMMENT "  * Typed climatology provider V1 and corrected official ENSO episode classification")
 
 set(PARENT "opencpn")
 
@@ -238,6 +238,11 @@ if(BUILD_TESTING)
   add_executable(climatology_api_tests tests/test_climatology_api.cpp)
   target_include_directories(climatology_api_tests PRIVATE include)
   add_test(NAME climatology_api COMMAND climatology_api_tests)
+  add_executable(climatology_provider_api_tests
+    tests/test_climatology_provider_api.cpp
+  )
+  target_include_directories(climatology_provider_api_tests PRIVATE include)
+  add_test(NAME climatology_provider_api COMMAND climatology_provider_api_tests)
 endif()
 
 ##==============================================================

@@ -95,7 +95,11 @@ monthly, and its coverage limitations are explicit.
 Use the versioned/access-dated historical Oceanic Niño Index table based on
 ERSSTv6. ENSO is auxiliary to cyclone filtering and is not forced to the
 dynamic climatology period. Retain the plugin's ONI interpretation; do not
-silently substitute CPC's newer operational Relative ONI.
+silently substitute CPC's newer operational Relative ONI. Apply CPC's event
+definition as well as its anomaly threshold: five consecutive overlapping
+three-month seasons must qualify. The legacy runtime cannot represent an
+episode flag separately, so short threshold excursions are encoded as neutral
+and qualified seasons retain the published ONI anomaly.
 
 ## Provenance manifest
 

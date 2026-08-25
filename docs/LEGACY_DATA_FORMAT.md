@@ -128,6 +128,13 @@ values or non-numeric missing markers. Runtime thresholds are >=+0.5 El Niño,
 <=-0.5 La Niña, otherwise neutral. The file does not carry its index name,
 base period, source version, or access date.
 
+Dataset generation from version `ocpn-climatology-2026.2` applies NOAA CPC's
+official duration rule: an event needs at least five consecutive overlapping
+three-month seasons at or beyond the threshold. An isolated threshold
+excursion is written as neutral while qualified seasons retain their published
+ONI anomaly. This preserves the legacy 12-value format and runtime thresholds
+without falsely treating short excursions as ENSO episodes.
+
 The released file's final 2014 row is malformed and contains only three monthly
 values. The historical runtime could index beyond that row. The hardened reader
 accepts only a year followed by exactly twelve valid monthly values.

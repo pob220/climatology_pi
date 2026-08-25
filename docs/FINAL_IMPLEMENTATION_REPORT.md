@@ -1,5 +1,12 @@
 # Climatology modernisation implementation report
 
+> Historical release note: this report records the completed 1.6.38.0 /
+> dataset-2026.1 run. The evidence-driven follow-on candidate is 1.6.39.0 /
+> dataset-2026.2. It corrects CPC episode classification and adds an optional
+> typed, all-years-only query boundary while retaining every legacy pointer.
+> See `docs/research/climatology-modernisation-study.md` and
+> `docs/CLIMATOLOGY_PROVIDER_API_V1.md`; no ENSO selector has been enabled.
+
 This report is completed with the measured release and deployment evidence at
 the end of the implementation run; the design and audit findings below are
 already fixed in the repository history.
