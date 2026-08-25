@@ -5,11 +5,11 @@
     "note": "Target rolling period; authoritative per-product periods below take precedence where source coverage is shorter",
     "start": "1995-01-01"
   },
-  "dataset_version": "ocpn-climatology-2026.1",
-  "generated_utc": "2026-08-18T04:50:24.720927+00:00",
+  "dataset_version": "ocpn-climatology-2026.2",
+  "generated_utc": "2026-08-25T07:31:23.663541+00:00",
   "generator": {
     "dirty": false,
-    "git_commit": "486ffba6b55d70daa437ce357b86a32f93ab6429"
+    "git_commit": "c59c71f2b036becf40ce0cd4efdb47d0d09fc848"
   },
   "manifest_schema": 1,
   "outputs": [
@@ -119,9 +119,9 @@
       "sha256": "3f215411d1e7b91df98535947c85824b20ec5ed246c021c8a6ab79748747d81c"
     },
     {
-      "bytes": 4529,
+      "bytes": 4513,
       "file": "elnino_years.txt",
-      "sha256": "dcf4a0b26a4b281708d71430d76764df3f25e6cdeb76908d27a9d3e1afbac603"
+      "sha256": "cf347e7e99a3c953ae5ca56629b121cd807e599461806c089d66577bcbd53e54"
     },
     {
       "bytes": 463626,
@@ -479,7 +479,7 @@
       "target_grid": "regular 1 degree global"
     },
     {
-      "aggregation": "complete twelve-season rows only",
+      "aggregation": "complete twelve-season rows; +/-0.5 degree C threshold runs qualify only after five consecutive overlapping seasons; short excursions are encoded neutral",
       "encoding": "strict ASCII legacy table",
       "name": "ENSO classification",
       "period": {
@@ -502,7 +502,7 @@
         "OND",
         "NDJ"
       ],
-      "summary": "NOAA CPC historical three-month Oceanic Nino Index based on ERSSTv6"
+      "summary": "NOAA CPC ERSSTv6 ONI classified using the official five-overlapping-season episode rule"
     }
   ],
   "software": {
@@ -581,8 +581,11 @@
       "url": "https://ghrc.nsstc.nasa.gov/pub/lis/climatology/LIS-OTD/HRMC/"
     },
     {
-      "accessed": "2026-08-17",
-      "generated_output_sha256": "dcf4a0b26a4b281708d71430d76764df3f25e6cdeb76908d27a9d3e1afbac603",
+      "accessed": "2026-08-25",
+      "acquired_object": "CPC ONI v6 HTML table",
+      "acquired_sha256": "0eacd96fe0e29f658f2ab190620f436d5c51294c190e0d082ef2f4b42c218768",
+      "classification": "CPC +/-0.5 degree C threshold sustained for at least five consecutive overlapping seasons",
+      "generated_output_sha256": "cf347e7e99a3c953ae5ca56629b121cd807e599461806c089d66577bcbd53e54",
       "name": "NOAA CPC Oceanic Nino Index based on ERSSTv6",
       "product_id": "CPC-ONI-v6",
       "url": "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso/oni/v6/"

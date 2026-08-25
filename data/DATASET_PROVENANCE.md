@@ -1,9 +1,9 @@
-# OpenCPN Climatology dataset ocpn-climatology-2026.1
+# OpenCPN Climatology dataset ocpn-climatology-2026.2
 
-Generated: 2026-08-18T04:50:24.720927+00:00
+Generated: 2026-08-25T07:31:23.663541+00:00
 Target period: 1995-01-01 through 2024-12-31 (multi-product-target)
 Target rolling period; authoritative per-product periods below take precedence where source coverage is shorter
-Generator commit: `486ffba6b55d70daa437ce357b86a32f93ab6429`
+Generator commit: `c59c71f2b036becf40ce0cd4efdb47d0d09fc848`
 
 ## Products
 
@@ -18,7 +18,7 @@ Generator commit: `486ffba6b55d70daa437ce357b86a32f93ab6429`
 * **tropical cyclone tracks** (1995-01-01 through 2024-12-31) — IBTrACS v04r01 main-track positions at six-hour synoptic times
 * **bathymetric context** (2026-04-23 through 2026-04-23) — GEBCO_2026 wet-cell median depth, contextual and explicitly not for navigation
 * **lightning** (1995-05-04 through 2013-12-31) — Retained observational NASA LIS/OTD HRMC v2.3.2013 monthly flash climatology
-* **ENSO classification** (1950-01-01 through 2025-12-31) — NOAA CPC historical three-month Oceanic Nino Index based on ERSSTv6
+* **ENSO classification** (1950-01-01 through 2025-12-31) — NOAA CPC ERSSTv6 ONI classified using the official five-overlapping-season episode rule
 
 ## Sources
 
@@ -61,7 +61,7 @@ Hard source-to-package checks passed: 4/4.
 * `cyclone-she.gz` — 124650 bytes — SHA-256 `6329d2d821c79b00b7fffd2040e7943c34eeef9375014e4280246f1a27db4a9c`
 * `cyclone-spa.gz` — 58868 bytes — SHA-256 `a448dfb91146f7a19ddbc4ff1e9e47d3a1bc757e51cec20deeb8f5c13ac433ef`
 * `cyclone-wpa.gz` — 189266 bytes — SHA-256 `3f215411d1e7b91df98535947c85824b20ec5ed246c021c8a6ab79748747d81c`
-* `elnino_years.txt` — 4529 bytes — SHA-256 `dcf4a0b26a4b281708d71430d76764df3f25e6cdeb76908d27a9d3e1afbac603`
+* `elnino_years.txt` — 4513 bytes — SHA-256 `cf347e7e99a3c953ae5ca56629b121cd807e599461806c089d66577bcbd53e54`
 * `lightning.gz` — 463626 bytes — SHA-256 `7dcb59a00d88cfbf40f2a95a08827c1920fc2eecd60df71e223e09944602e243`
 * `precipitation.gz` — 54411 bytes — SHA-256 `2cb2594ff163e7f1b86032acceb7c69ffe5c93f5004771051f5e1b9ba0c4bdc5`
 * `relativehumidity.gz` — 358724 bytes — SHA-256 `06004c7ab3818d7031482a79809c108bf586d12368f6eb5acab03c2d2e5e70fa`
