@@ -162,6 +162,8 @@ def main():
     run(sys.executable, ROOT / 'ci/public-packages/package.py', '--binary', library,
         '--build-dir', work, '--kind', 'windows', '--target', 'msvc-64',
         '--target-version', '10', '--arch', 'x86_64')
+    archive = next((ROOT / 'public-packages').glob('*.tar.gz'))
+    run(sys.executable, ROOT / 'ci/public-packages/windows-host.py', archive, WORK / 'host')
 
 if __name__ == '__main__':
     main()

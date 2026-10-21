@@ -94,6 +94,10 @@ jobs:
           target=msvc-wx32
           if [ "$WX" = 31 ]; then target=msvc; fi
           python ci/public-packages/package.py --binary build/Release/climatology_pi.dll --build-dir build --kind windows --target "$target" --target-version 10 --arch x86
+      - name: Verify version in the stock Windows Plugin Manager
+        if: matrix.wx == '32'
+        shell: bash
+        run: python ci/public-packages/windows-host.py public-packages/*.tar.gz
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -101,6 +105,7 @@ jobs:
           path: |
             public-packages/
             build/*.log
+            artifacts/windows-version/
   macos:
     if: ${{ inputs.groups == 'all' || contains(inputs.groups, 'macos') }}
     name: macOS universal
@@ -186,3 +191,4 @@ jobs:
           path: |
             public-packages/
             artifacts/windows-x64/
+            artifacts/windows-version/
