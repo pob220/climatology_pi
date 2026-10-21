@@ -13,6 +13,6 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DCMAKE_POLICY
 cmake --build build --parallel 3
 ctest --test-dir build --output-on-failure
 (cd build && bash ../cmake/fix-macos-libs.sh)
-lipo -verify_arch arm64 x86_64 build/libclimatology_pi.dylib
+lipo build/libclimatology_pi.dylib -verify_arch arm64 x86_64
 python3 ci/public-packages/package.py --binary build/libclimatology_pi.dylib --kind macos --target darwin-wx32 --target-version 10 --arch 'arm64;x86_64'
 for xml in public-packages/*.xml; do xmllint --noout --schema ci/public-packages/ocpn-plugin.xsd "$xml"; done

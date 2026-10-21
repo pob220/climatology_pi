@@ -69,11 +69,11 @@ set(PACKAGE "climatology")
 set(SHORT_DESCRIPTION "Climatology PlugIn: global monthly climate and cyclone data")
 set(LONG_DESCRIPTION "Climatology provides overlay capabilities for historical weather and ocean data. Supported types include average wind direction and speed, gale and calm probabilities, sea-surface currents, precipitation, humidity, cloud cover, lightning strikes, sea-level pressure, sea and air temperature, and tropical-cyclone tracks. Versioned datasets report their exact source products and climatological periods.")
 
-set(VERSION_MAJOR "1")
-set(VERSION_MINOR "6")
-set(VERSION_PATCH "39")
+set(VERSION_MAJOR "2")
+set(VERSION_MINOR "0")
+set(VERSION_PATCH "0")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE  "25/08/2026")#DD/MM/YYYY format
+set(VERSION_DATE  "21/10/2026")#DD/MM/YYYY format
 set(OCPN_MIN_VERSION "ov58")
 
 set(OCPN_API_VERSION_MAJOR "1")

@@ -56,7 +56,7 @@ jobs:
             *24.04) version=24.04; target=ubuntu-gtk3-x86_64 ;;
           esac
           docker run --rm --platform "$PLATFORM" -v "$PWD:/source" -v /etc/ssl/certs/ca-certificates.crt:/tmp/build-ca.crt:ro -w /source \
-            -e VERSION_ID="$version" -e PACKAGE_TARGET="$target" -e PACKAGE_ARCH="$ARCH" \
+            -e GITHUB_ACTIONS -e GITHUB_REPOSITORY -e GITHUB_REF_NAME -e VERSION_ID="$version" -e PACKAGE_TARGET="$target" -e PACKAGE_ARCH="$ARCH" \
             "$IMAGE" bash ci/public-packages/linux.sh
       - uses: actions/upload-artifact@v4
         if: always()

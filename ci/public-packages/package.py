@@ -11,8 +11,8 @@ import subprocess
 import tarfile
 import xml.etree.ElementTree as ET
 
-VERSION = '1.6.39.0'
-TAG = 'v1.6.39.0-modern-data'
+VERSION = '2.0.0.0'
+TAG = 'v2.0.0.0-modern-data'
 REPO = 'https://github.com/pob220/climatology_pi'
 BASELINE = 'cd00282e6ea2784a6d78ccfe47fed713269ad87e'
 SOURCE = Path(__file__).resolve().parents[2]

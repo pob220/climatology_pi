@@ -38,6 +38,7 @@
 
 #include "climatology_pi.h"
 #include "ClimatologyConfigDialog.h"
+#include "ClimatologyTouch.h"
 
 static const wxString units0_names[] = {"Knots", "M/S", "MPH", "KPH", wxEmptyString};
 static const wxString units1_names[] = {"MilliBars", "mmHG", wxEmptyString};
@@ -260,6 +261,14 @@ ClimatologyConfigDialog::ClimatologyConfigDialog(ClimatologyDialog *parent)
     m_refreshTimer.Connect(wxEVT_TIMER, wxTimerEventHandler(ClimatologyConfigDialog::OnRefreshTimer) , NULL, this);
 
     DimeWindow( this );
+#ifdef __OCPN__ANDROID__
+    ClimatologyTouchControls(this, ClimatologyTouchFont());
+    SetMinSize(wxSize(240, 240));
+    const wxSize screen = wxGetDisplaySize();
+    const wxSize best = GetSizer()->CalcMin();
+    SetSize(wxSize(wxMin(best.x, screen.x - 40), wxMin(best.y, screen.y - 120)));
+    Layout();
+#endif
 }
 
 

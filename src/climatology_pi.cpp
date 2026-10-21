@@ -66,6 +66,11 @@ extern "C" DECL_EXP void destroy_pi(opencpn_plugin* p)
     delete p;
 }
 
+// Modern MSVC provides snprintf; the legacy API header aliases it to _snprintf.
+#if defined(_MSC_VER) && _MSC_VER >= 1900 && defined(snprintf)
+#undef snprintf
+#endif
+
 static climatology_pi *s_climatology_pi;
 
 template<typename Function>

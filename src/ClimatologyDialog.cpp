@@ -38,6 +38,7 @@
 #include "climatology_pi.h"
 #include "ClimatologyDialog.h"
 #include "ClimatologyConfigDialog.h"
+#include "ClimatologyTouch.h"
 
 ClimatologyDialog::ClimatologyDialog(wxWindow *parent, climatology_pi *ppi)
 #ifndef __WXOSX__
@@ -49,6 +50,13 @@ ClimatologyDialog::ClimatologyDialog(wxWindow *parent, climatology_pi *ppi)
 {
 #ifdef __OCPN__ANDROID__
     GetHandle()->setStyleSheet( qtStyleSheet);
+#endif
+#ifdef __OCPN__ANDROID__
+    ClimatologyTouchControls(this, ClimatologyTouchFont());
+    wxTextCtrl* readings[] = {m_tWind, m_tWindDir, m_tCurrent, m_tCurrentDir,
+        m_tPressure, m_tSeaTemperature, m_tAirTemperature, m_tCloudCover,
+        m_tPrecipitation, m_tRelativeHumidity, m_tLightning, m_tSeaDepth};
+    for (wxTextCtrl* reading : readings) reading->SetEditable(false);
 #endif
     m_cfgdlg = new ClimatologyConfigDialog(this);
 
@@ -161,6 +169,7 @@ void ClimatologyDialog::PopulateTrackingControls()
     SetControlsVisible(ClimatologyOverlaySettings::SEADEPTH, m_cbSeaDepth, m_tSeaDepth);
 
     Refresh();
+    Layout();
     Fit();
 }
 
