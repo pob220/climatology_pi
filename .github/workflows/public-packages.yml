@@ -6,6 +6,10 @@ on:
         description: 'all, or comma-separated linux,windows,macos,android,flatpak,windows64'
         default: all
         type: string
+      linux_images:
+        description: JSON list of native Debian images to build
+        default: '["debian:bullseye", "debian:bookworm", "debian:trixie"]'
+        type: string
       run_id:
         description: Retained native-package build for the display-only checks
         default: '39616246106'
@@ -21,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: ['debian:bullseye', 'debian:bookworm', 'debian:trixie']
+        image: ${{ fromJSON(inputs.linux_images) }}
         arch: [x86_64, arm64, armhf]
         include:
           - arch: x86_64

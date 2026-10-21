@@ -24,10 +24,17 @@ git config --global --add safe.directory /source
 if [[ "$VERSION_ID" == 11 ]]; then
   apt-get install -y libwxgtk3.0-gtk3-dev libwxgtk3.0-gtk3-0v5
 elif [[ "$VERSION_ID" == 22.04 ]]; then
-  apt-get install -y software-properties-common
-  add-apt-repository -y ppa:opencpn/opencpn
-  apt-get update -qq
-  apt-get -o Acquire::Retries=5 install -y libwxgtk3.2-dev
+  # Build wxWidgets 3.2 for the Jammy host ABI without an unavailable PPA.
+  apt-get install -y curl libjpeg-dev libpng-dev libtiff-dev libexpat1-dev
+  curl --fail --location --retry 3 https://github.com/wxWidgets/wxWidgets/releases/download/v3.2.9/wxWidgets-3.2.9.tar.bz2 -o /tmp/climatology-wx.tar.bz2
+  mkdir -p /tmp/climatology-wx
+  tar -xjf /tmp/climatology-wx.tar.bz2 --strip-components=1 -C /tmp/climatology-wx
+  cmake -S /tmp/climatology-wx -B /tmp/climatology-wx-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/climatology-wx -DwxBUILD_SHARED=ON -DwxBUILD_TESTS=OFF -DwxBUILD_SAMPLES=OFF -DwxUSE_WEBVIEW=OFF -DwxUSE_MEDIACTRL=OFF -DwxUSE_OPENGL=ON
+  cmake --build /tmp/climatology-wx-build --parallel 3
+  cmake --install /tmp/climatology-wx-build
+  export WX_CONFIG=/opt/climatology-wx/bin/wx-config
+  export PATH="/opt/climatology-wx/bin:$PATH"
+  export LD_LIBRARY_PATH="/opt/climatology-wx/lib:${LD_LIBRARY_PATH:-}"
 else
   apt-get -o Acquire::Retries=5 install -y libwxgtk3.2-dev
 fi
