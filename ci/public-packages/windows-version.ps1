@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 public static class ClimatologyNative {
  [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr window, uint message, IntPtr wp, IntPtr lp);
  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr window);
+ [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr window, int command);
 }
 "@
 New-Item -ItemType Directory -Force $Output | Out-Null
@@ -43,9 +44,14 @@ try {
    $node.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
   }
  }
+ $app.Refresh()
+ [ClimatologyNative]::ShowWindow($app.MainWindowHandle, 3) | Out-Null
  [ClimatologyNative]::SetForegroundWindow($app.MainWindowHandle) | Out-Null
- # ID_SETTINGS in OpenCPN's stable idents.h; same event as its Options toolbar.
- [ClimatologyNative]::PostMessage($app.MainWindowHandle, 0x111, [IntPtr]1556, [IntPtr]::Zero) | Out-Null
+ # Use the real Options accelerator, after the splash has closed.
+ [System.Windows.Forms.SendKeys]::SendWait('^,')
+ Start-Sleep -Seconds 2
+ Capture 'options-open.png'
+ @((Nodes) | ForEach-Object { $_.Current.Name }) | Set-Content -Encoding utf8 (Join-Path $Output 'options-text.txt')
  $deadline = [DateTime]::UtcNow.AddSeconds(30)
  $selected = $false
  do {

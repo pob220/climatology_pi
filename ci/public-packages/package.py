@@ -25,10 +25,23 @@ def digest(data):
 
 def make_package(args):
     binary = args.binary.read_bytes()
+    revision = subprocess.check_output(['git', '-C', str(SOURCE), 'rev-parse', 'HEAD'], text=True).strip()
     if binary[:4] == b'\x7fELF':
         machine = struct.unpack_from('<H', binary, 18)[0]
         expected = {'x86_64': 62, 'arm64': 183, 'aarch64': 183, 'armhf': 40}
         assert machine == expected[args.arch], (machine, args.arch)
+        if args.kind == 'android':
+            if binary[4] == 2:
+                offset = struct.unpack_from('<Q', binary, 32)[0]
+                size, count = struct.unpack_from('<HH', binary, 54)
+                align_offset, align_format = 48, '<Q'
+            else:
+                offset = struct.unpack_from('<I', binary, 28)[0]
+                size, count = struct.unpack_from('<HH', binary, 42)
+                align_offset, align_format = 28, '<I'
+            loads = [offset + i * size for i in range(count)
+                     if struct.unpack_from('<I', binary, offset + i * size)[0] == 1]
+            assert loads and all(struct.unpack_from(align_format, binary, p + align_offset)[0] >= 16384 for p in loads), 'Android LOAD alignment is below 16 KiB'
     elif binary[:2] == b'MZ':
         pe = struct.unpack_from('<I', binary, 0x3c)[0]
         machine = struct.unpack_from('<H', binary, pe + 4)[0]
@@ -50,7 +63,7 @@ def make_package(args):
         ('summary', 'Global monthly climate and cyclone data with source provenance'),
         ('api-version', args.api_version), ('open-source', 'yes'),
         ('author', "Sean D'Epagnier; modernisation contributors"),
-        ('source', REPO),
+        ('source', f'{REPO}/tree/{revision}'),
         ('description', 'Monthly ERA5 winds and atmosphere, OSCAR currents, OISST sea temperature, '
          'IBTrACS cyclones and GEBCO bathymetric context. Includes the complete '
          'ocpn-climatology-2026.2 dataset, source periods, checksums and validation. '
@@ -92,7 +105,6 @@ def make_package(args):
         destination = (f'{locale_root}/{locale}.lproj/opencpn-climatology_pi.mo' if args.kind == 'macos'
                        else f'{locale_root}/{locale}/LC_MESSAGES/opencpn-climatology_pi.mo')
         entries[destination] = mo.read_bytes()
-    revision = subprocess.check_output(['git', '-C', str(SOURCE), 'rev-parse', 'HEAD'], text=True).strip()
     provenance = dict(schema='climatology-plugin-package-v1', plugin_version=VERSION,
                       dataset_version=manifest['dataset_version'], baseline_revision=BASELINE,
                       source_revision=revision, target=args.target,
