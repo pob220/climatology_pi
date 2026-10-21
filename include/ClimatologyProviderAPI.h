@@ -18,7 +18,7 @@ namespace climatology_api {
 static const std::uint32_t QUERY_API_V1 = 1;
 static const std::size_t WIND_SECTOR_COUNT = 8;
 
-enum Status : std::int32_t {
+enum QueryStatus : std::int32_t {
     STATUS_OK = 0,
     STATUS_UNKNOWN = 1,
     STATUS_INVALID_REQUEST = 2,
@@ -27,6 +27,12 @@ enum Status : std::int32_t {
     STATUS_UNSUPPORTED_SCENARIO = 5,
     STATUS_NOT_READY = 6
 };
+
+// Xlib defines Status as a macro on wxWidgets 3.0. Keep the original source
+// alias for clients without that macro; the fixed-width wire ABI is unchanged.
+#ifndef Status
+using Status = QueryStatus;
+#endif
 
 enum Scenario : std::uint32_t {
     SCENARIO_ALL_YEARS = 0,
@@ -143,7 +149,7 @@ inline ResultV1 MakeResultV1()
     return result;
 }
 
-inline Status ValidateQueryV1(const QueryV1 *query)
+inline QueryStatus ValidateQueryV1(const QueryV1 *query)
 {
     if(!query || query->struct_size < sizeof(QueryV1))
         return STATUS_INVALID_REQUEST;

@@ -243,6 +243,12 @@ if(BUILD_TESTING)
   )
   target_include_directories(climatology_provider_api_tests PRIVATE include)
   add_test(NAME climatology_provider_api COMMAND climatology_provider_api_tests)
+  add_executable(climatology_provider_xlib_tests
+    tests/test_climatology_provider_api.cpp
+  )
+  target_include_directories(climatology_provider_xlib_tests PRIVATE include)
+  target_compile_definitions(climatology_provider_xlib_tests PRIVATE Status=int)
+  add_test(NAME climatology_provider_xlib COMMAND climatology_provider_xlib_tests)
 endif()
 
 ##==============================================================
