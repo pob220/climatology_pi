@@ -26,3 +26,6 @@ research/climatology_modernisation/cache/
 /flatpak-public.json
 
 __pycache__/
+
+/.windows64/
+/artifacts/

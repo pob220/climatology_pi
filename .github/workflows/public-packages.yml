@@ -155,3 +155,25 @@ jobs:
         with:
           name: flatpak-${{ matrix.sdk }}-${{ matrix.arch }}
           path: public-packages/
+
+  windows64:
+    name: Windows x64 stock host
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - name: Build against the pinned stock x64 host
+        shell: pwsh
+        run: |
+          choco install poedit -y --no-progress
+          $env:PATH = "C:\Program Files\Poedit\GettextTools\bin;" + $env:PATH
+          python ci/public-packages/windows64.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-x64
+          path: |
+            public-packages/
+            artifacts/windows-x64/
