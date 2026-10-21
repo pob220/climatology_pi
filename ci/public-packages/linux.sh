@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
-apt-get update -qq
+# Use HTTPS to avoid stale intermediary package indexes.
+sed -i "s|http://deb.debian.org|https://deb.debian.org|g; s|http://security.debian.org|https://security.debian.org|g" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+apt-get -o Acquire::Retries=3 -o Acquire::http::No-Cache=true update -qq
 apt-get install -y --no-install-recommends build-essential cmake gettext git ca-certificates lsb-release libgtk-3-dev libgl1-mesa-dev libglu1-mesa-dev libbz2-dev zlib1g-dev python3 libxml2-utils
+git config --global --add safe.directory /source
 if [[ "$VERSION_ID" == 11 ]]; then
   apt-get install -y libwxgtk3.0-gtk3-dev libwxgtk3.0-gtk3-0v5
 elif [[ "$VERSION_ID" == 22.04 ]]; then
