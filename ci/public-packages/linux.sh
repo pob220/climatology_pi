@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
+mkdir -p /etc/ssl/certs
+cp /tmp/build-ca.crt /etc/ssl/certs/ca-certificates.crt
 # Use HTTPS to avoid stale intermediary package indexes.
 sed -i "s|http://deb.debian.org|https://deb.debian.org|g; s|http://security.debian.org|https://security.debian.org|g" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
 apt-get -o Acquire::Retries=3 -o Acquire::http::No-Cache=true update -qq
