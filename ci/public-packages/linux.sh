@@ -16,7 +16,7 @@ sed -i 's|https://deb.debian.org/debian-security|https://security.debian.org/deb
 if [[ "$VERSION_ID" == 11 ]]; then
   # Bullseye has reached EOL; the live security index references removed files.
   rm -f /etc/apt/sources.list.d/debian.sources
-  printf '%s\n' 'deb https://archive.debian.org/debian bullseye main' > /etc/apt/sources.list
+  printf '%s\n' 'deb https://archive.debian.org/debian bullseye main' 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/20260831T235959Z bullseye-security main' > /etc/apt/sources.list
 fi
 apt-get update -qq --error-on=any
 apt-get install -y --no-install-recommends build-essential cmake gettext git ca-certificates lsb-release libgtk-3-dev libgl1-mesa-dev libglu1-mesa-dev libbz2-dev zlib1g-dev python3 libxml2-utils

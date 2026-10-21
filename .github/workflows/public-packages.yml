@@ -6,8 +6,13 @@ on:
         description: 'all, or comma-separated linux,windows,macos,android,flatpak,windows64'
         default: all
         type: string
+      run_id:
+        description: Retained native-package build for the display-only checks
+        default: '39616246106'
+        type: string
 permissions:
   contents: read
+  actions: read
 jobs:
   linux:
     if: ${{ inputs.groups == 'all' || contains(inputs.groups, 'linux') }}
@@ -192,3 +197,30 @@ jobs:
             public-packages/
             artifacts/windows-x64/
             artifacts/windows-version/
+
+  version-display:
+    if: ${{ contains(inputs.groups, 'display') }}
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86
+            artifact: windows-wx32-x86
+          - arch: x64
+            artifact: windows-x64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+          name: ${{ matrix.artifact }}
+          path: retained-package
+      - name: Import and inspect the actual Plugin Manager version
+        run: python ci/public-packages/check-windows-artifact.py '${{ matrix.arch }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-version-${{ matrix.arch }}
+          path: artifacts/windows-version/
