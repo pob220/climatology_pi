@@ -1,0 +1,157 @@
+name: Plugin Manager packages
+on:
+  push:
+    branches: ['release/plugin-manager-*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  linux:
+    name: Linux ${{ matrix.image }} ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ['debian:bullseye', 'debian:bookworm', 'debian:trixie']
+        arch: [x86_64, arm64, armhf]
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+            platform: linux/amd64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            platform: linux/arm64
+          - arch: armhf
+            runner: ubuntu-24.04-arm
+            platform: linux/arm/v7
+          - image: ubuntu:22.04
+            arch: x86_64
+            runner: ubuntu-24.04
+            platform: linux/amd64
+          - image: ubuntu:24.04
+            arch: x86_64
+            runner: ubuntu-24.04
+            platform: linux/amd64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+        if: matrix.arch == 'armhf'
+        with:
+          platforms: arm
+      - name: Build, test and package
+        env:
+          IMAGE: ${{ matrix.image }}
+          ARCH: ${{ matrix.arch }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          case "$IMAGE" in
+            *bullseye) version=11; target="debian-$ARCH" ;;
+            *bookworm) version=12; target="debian-$ARCH" ;;
+            *trixie) version=13; target="debian-$ARCH" ;;
+            *22.04) version=22.04; target=ubuntu-wx32-x86_64 ;;
+            *24.04) version=24.04; target=ubuntu-gtk3-x86_64 ;;
+          esac
+          docker run --rm --platform "$PLATFORM" -v "$PWD:/source" -w /source \
+            -e VERSION_ID="$version" -e PACKAGE_TARGET="$target" -e PACKAGE_ARCH="$ARCH" \
+            "$IMAGE" bash ci/public-packages/linux.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-${{ strategy.job-index }}
+          path: public-packages/
+          if-no-files-found: warn
+  windows:
+    name: Windows wx${{ matrix.wx }} x86
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        wx: ['31', '32']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x86
+      - name: Build native plugin
+        shell: cmd
+        env:
+          WX_VER: ${{ matrix.wx }}
+          MSVC_VERSION: '2022'
+          CONFIGURATION: Release
+          OCPN_TARGET: MSVC
+        run: ci\circleci-build-msvc.bat
+      - name: Test and create import package
+        shell: bash
+        env:
+          WX: ${{ matrix.wx }}
+        run: |
+          ctest --test-dir build -C Release --output-on-failure
+          target=msvc-wx32
+          if [ "$WX" = 31 ]; then target=msvc; fi
+          python ci/public-packages/package.py --binary build/Release/climatology_pi.dll --build-dir build --kind windows --target "$target" --target-version 10 --arch x86
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-wx${{ matrix.wx }}-x86
+          path: |
+            public-packages/
+            build/*.log
+  macos:
+    name: macOS universal
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build universal library and package
+        run: bash ci/public-packages/macos.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-universal
+          path: |
+            public-packages/
+            build/*.log
+  android:
+    name: Android ${{ matrix.arch }}
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [arm64, armhf]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y gettext libxml2-utils
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'ndk;26.1.10909125'
+      - name: Build import package
+        run: bash ci/public-packages/android.sh '${{ matrix.arch }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-${{ matrix.arch }}
+          path: |
+            public-packages/
+            build-android-*/dependencies.txt
+  flatpak:
+    name: Flatpak ${{ matrix.sdk }} ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        sdk: ['22.08', '24.08', '25.08']
+        arch: [x86_64, aarch64]
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build import package
+        run: bash ci/public-packages/flatpak.sh '${{ matrix.sdk }}' '${{ matrix.arch }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flatpak-${{ matrix.sdk }}-${{ matrix.arch }}
+          path: public-packages/

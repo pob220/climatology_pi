@@ -16,3 +16,13 @@ master.zip
 OCPNAndroidCommon*
 .research-venv/
 research/climatology_modernisation/cache/
+
+/public-packages/
+/build-public/
+/build-android-*/
+/android-common
+/flatpak-build/
+/.flatpak-builder/
+/flatpak-public.json
+
+__pycache__/

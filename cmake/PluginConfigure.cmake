@@ -648,7 +648,7 @@ if (QT_ANDROID)
   add_definitions(-DOCPN_USE_WRAPPER)
   add_definitions(-DANDROID)
 
-  set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-soname,libgorp.so ")
+  set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-soname,libclimatology_pi.so -Wl,-z,max-page-size=16384 ")
 
   # set(CMAKE_POSITION_INDEPENDENT_CODE ON)
   set(CMAKE_CXX_FLAGS "-pthread -fPIC ")
@@ -661,7 +661,7 @@ if (QT_ANDROID)
   )
 
   message(STATUS "${CMLOC}Adding libgorp.o shared library")
-  set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-soname,libgorp.so ")
+  set(CMAKE_SHARED_LINKER_FLAGS "-Wl,-soname,libclimatology_pi.so -Wl,-z,max-page-size=16384 ")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s") # Strip binary
 
   set(QT_LINUX "OFF")
@@ -790,6 +790,7 @@ if (NOT QT_ANDROID)
 
   message(STATUS "${CMLOC} Revised wxWidgets Libraries: ${wxWidgets_LIBRARIES}")
 else (NOT QT_ANDROID)
+  get_filename_component(OCPN_Android_Common "${OCPN_Android_Common}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
   if (_wx_selected_config MATCHES "androideabi-qt-arm64")
     message(STATUS "${CMLOC}Processing androideabi-qt-arm64 includes")
 
@@ -827,12 +828,12 @@ else (NOT QT_ANDROID)
     )
 
     set(wxWidgets_LIBRARIES
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/lib/libQt5Core.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/lib/libQt5OpenGL.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/lib/libQt5Widgets.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/lib/libQt5Gui.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/lib/libQt5AndroidExtras.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/opencpn/API-117/libarm64/libgorp.so
+        ${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/lib/libQt5Core.so
+        ${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/lib/libQt5OpenGL.so
+        ${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/lib/libQt5Widgets.so
+        ${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/lib/libQt5Gui.so
+        ${OCPN_Android_Common}/qt5/build_arm64_O3/qtbase/lib/libQt5AndroidExtras.so
+        ${OCPN_Android_Common}/opencpn/API-117/libarm64/libgorp.so
         -lc++_shared
         -lz
         libGLESv2.so
@@ -877,12 +878,12 @@ else (NOT QT_ANDROID)
     add_definitions(-DOCPN_ARMHF)
 
     set(wxWidgets_LIBRARIES
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/lib/libQt5Core.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/lib/libQt5OpenGL.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/lib/libQt5Widgets.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/lib/libQt5Gui.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/lib/libQt5AndroidExtras.so
-        ${CMAKE_CURRENT_SOURCE_DIR}/${OCPN_Android_Common}/opencpn/API-117/libarmhf/libgorp.so
+        ${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/lib/libQt5Core.so
+        ${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/lib/libQt5OpenGL.so
+        ${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/lib/libQt5Widgets.so
+        ${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/lib/libQt5Gui.so
+        ${OCPN_Android_Common}/qt5/build_arm32_19_O3/qtbase/lib/libQt5AndroidExtras.so
+        ${OCPN_Android_Common}/opencpn/API-117/libarmhf/libgorp.so
         -lc++_shared
         -lz
         libGLESv2.so
