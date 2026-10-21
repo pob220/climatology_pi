@@ -250,7 +250,12 @@ ClimatologyConfigDialog::ClimatologyConfigDialog(ClimatologyDialog *parent)
     PopulateUnits(m_lastdatatype);
     ReadDataTypeSettings(m_lastdatatype);
 
-    m_stVersion->SetLabel(wxString::Format("%d.%d.%d.%d — dataset %s",
+#ifdef __OCPN__ANDROID__
+    const char* version_format = "%d.%d.%d.%d\n%s";
+#else
+    const char* version_format = "%d.%d.%d.%d - dataset %s";
+#endif
+    m_stVersion->SetLabel(wxString::Format(version_format,
                                            PLUGIN_VERSION_MAJOR,
                                            PLUGIN_VERSION_MINOR,
                                            PLUGIN_VERSION_PATCH,

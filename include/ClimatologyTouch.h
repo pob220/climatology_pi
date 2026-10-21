@@ -25,7 +25,7 @@ inline void ClimatologyTouchControls(wxWindow* window, const wxFont& font) {
     if (wxCheckBox* checkbox = dynamic_cast<wxCheckBox*>(window)) {
         checkbox->SetMinSize(wxSize(wxMax(80, hint.width()), wxMax(48, hint.height())));
     } else if (dynamic_cast<wxChoice*>(window)) {
-        window->SetMinSize(wxSize(150, 48));
+        window->SetMinSize(wxSize(wxMax(150, hint.width()), wxMax(48, hint.height())));
     } else if (dynamic_cast<wxSpinCtrl*>(window)) {
         window->SetMinSize(wxSize(100, 48));
     } else if (dynamic_cast<wxSlider*>(window)) {

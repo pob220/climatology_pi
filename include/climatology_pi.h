@@ -72,10 +72,10 @@ public:
 
       int GetAPIVersionMajor();
       int GetAPIVersionMinor();
-      int GetPlugInVersionMajor();
-      int GetPlugInVersionMinor();
-      int GetPlugInVersionPatch();
-      int GetPlugInVersionPost();  
+      int GetPlugInVersionMajor() override;
+      int GetPlugInVersionMinor() override;
+      int GetPlugInVersionPatch() override;
+      int GetPlugInVersionPost() override;  
       wxBitmap *GetPlugInBitmap();
       wxString GetCommonName();
       wxString GetShortDescription();

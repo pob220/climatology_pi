@@ -13,6 +13,11 @@ EOF
 sed -i "s|http://deb.debian.org|https://deb.debian.org|g; s|http://security.debian.org|https://security.debian.org|g" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
 # A fresh mirror URL avoids obsolete security indexes served by intermediaries.
 sed -i 's|https://deb.debian.org/debian-security|https://security.debian.org/debian-security|g; s|https://deb.debian.org/debian|https://ftp.debian.org/debian|g' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+if [[ "$VERSION_ID" == 11 ]]; then
+  # Bullseye has reached EOL; the live security index references removed files.
+  rm -f /etc/apt/sources.list.d/debian.sources
+  printf '%s\n' 'deb https://archive.debian.org/debian bullseye main' > /etc/apt/sources.list
+fi
 apt-get update -qq --error-on=any
 apt-get install -y --no-install-recommends build-essential cmake gettext git ca-certificates lsb-release libgtk-3-dev libgl1-mesa-dev libglu1-mesa-dev libbz2-dev zlib1g-dev python3 libxml2-utils
 git config --global --add safe.directory /source

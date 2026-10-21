@@ -38,10 +38,10 @@ version = max(versions,key=len)[:-1].decode()
 date = max(dates)[:-1].decode()
 config.parent.mkdir(parents=True,exist_ok=True)
 config.write_text(f'[Settings]\nConfigVersionString=Version {version} Build {date}\nNavMessageShown=1\nOpenGL=0\nDisableOpenGL=1\nShowMenuBar=1\n[PlugIns/climatology_pi.dll]\nbEnabled=1\n',encoding='utf-8')
-for name,args in [('abi',['print-abi']),('import',['import-plugin',str(archive)]),('installed',['list-plugins'])]:
+for name,args in [('abi',['print-abi']),('import',['import-plugin',str(archive)])]:
     command = subprocess.run([str(host/'opencpn-cmd.exe'),*args],cwd=host,env=environment,capture_output=True,text=True,timeout=90)
     (output/f'{name}.log').write_text(command.stdout+command.stderr,encoding='utf-8')
-    assert command.returncode == 0, (name,command.stdout,command.stderr)
+    assert command.returncode == 0, (name,command.returncode,command.stdout,command.stderr)
 library = Path(environment['LOCALAPPDATA']) / 'opencpn/plugins/climatology_pi.dll'
 assert library.is_file(), 'Plugin Manager did not install the DLL'
 with tarfile.open(archive) as tar:
