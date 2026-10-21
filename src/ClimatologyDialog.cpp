@@ -50,6 +50,8 @@ ClimatologyDialog::ClimatologyDialog(wxWindow *parent, climatology_pi *ppi)
 {
 #ifdef __OCPN__ANDROID__
     GetHandle()->setStyleSheet( qtStyleSheet);
+    wxStaticText* drag_handle = new wxStaticText(this, wxID_ANY, _("Climatology"));
+    GetSizer()->Insert(0, drag_handle, 0, wxEXPAND | wxALL, 5);
 #endif
 #ifdef __OCPN__ANDROID__
     ClimatologyTouchControls(this, ClimatologyTouchFont());
@@ -75,10 +77,11 @@ ClimatologyDialog::ClimatologyDialog(wxWindow *parent, climatology_pi *ppi)
     m_fittimer.Connect(wxEVT_TIMER, wxTimerEventHandler
                        ( ClimatologyDialog::OnFitTimer ), NULL, this);
 #ifdef __OCPN__ANDROID__
-    GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
-    GetHandle()->grabGesture(Qt::PanGesture);
-    GetHandle()->setStyleSheet( qtStyleSheet);
-    Connect( wxEVT_QT_PANGESTURE,
+    // Only the title handles panel movement. A dialog-wide pan recognizer
+    // steals the slider's native touch-drag events.
+    drag_handle->GetHandle()->setAttribute(Qt::WA_AcceptTouchEvents);
+    drag_handle->GetHandle()->grabGesture(Qt::PanGesture);
+    drag_handle->Connect( wxEVT_QT_PANGESTURE,
                        (wxObjectEventFunction) (wxEventFunction) &ClimatologyDialog::OnEvtPanGesture, NULL, this );
 #endif
 }
