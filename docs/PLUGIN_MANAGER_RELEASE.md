@@ -36,6 +36,10 @@ Android packaging checks both native architecture and the library's unique
 alignment. Touch-specific layout is applied after Qt styling: readable labels,
 large controls, read-only sampled values and scrollable configuration pages.
 Only the title recognises panel-drag gestures, leaving slider gestures native.
+The previously disabled Android colour-map path is implemented with a GLES2
+shader: monthly interpolation, transparency, Mercator rotation and longitude
+wrapping work without requiring repeating NPOT textures. The shader restores
+host texture, program, buffer and vertex attribute state after drawing.
 
 Download the matching tarball and use OpenCPN Options > Plugins > Import
 plugin. Publishing public assets does not add this release to OpenCPN's main

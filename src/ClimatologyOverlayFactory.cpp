@@ -1618,6 +1618,11 @@ bool ClimatologyOverlayFactory::CreateGLTexture(ClimatologyOverlay &O,
     }
     if (progressdialog) progressdialog->Destroy();
 
+#ifdef __ANDROID__
+    GLint previousTexture, previousAlignment;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &previousTexture);
+    glGetIntegerv(GL_UNPACK_ALIGNMENT, &previousAlignment);
+#endif
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(texture_format, texture);
@@ -1636,6 +1641,10 @@ bool ClimatologyOverlayFactory::CreateGLTexture(ClimatologyOverlay &O,
                  0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
     delete [] data;
+#ifdef __ANDROID__
+    glBindTexture(GL_TEXTURE_2D, previousTexture);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, previousAlignment);
+#endif
 
     O.m_iTexture = texture;
     O.m_width = width - 1;
@@ -1668,116 +1677,133 @@ void ClimatologyOverlayFactory::DrawGLTexture( ClimatologyOverlay &O1, Climatolo
     if(vp.m_projection_type != PI_PROJECTION_MERCATOR)
         return;
 
-#ifdef __ANDROID__      //TODO  Implement shader structure
-#if 0
-        int w = vp.pix_width, h = vp.pix_height;
-
-        double lat[4], lon[4];
-        GetCanvasLLPix( &vp, wxPoint(0, 0), &lat[0], &lon[0] );
-        GetCanvasLLPix( &vp, wxPoint(w, 0), &lat[1], &lon[1] );
-        GetCanvasLLPix( &vp, wxPoint(w, h), &lat[2], &lon[2] );
-        GetCanvasLLPix( &vp, wxPoint(0, h), &lat[3], &lon[3] );
-
-        for(int i = 0; i < 4; i++) {
-            if(lon[i] - vp.clon > 180)
-                lon[i] -= 360;
-            else if(lon[i] - vp.clon < -180)
-                lon[i] += 360;
-
-            // normalize
-            lon[i] = lon[i] / 360.0;
-
-            // mercator conversion
-            double s1 = sin(deg2rad(lat[i]));
-            double y1 = .5 * log((1 + s1) / (1 - s1));
-            lat[i] = (1 + y1/M_PI)/2;
+#ifdef __ANDROID__
+    // GLES2 has no fixed-function texture pipeline. Blend both monthly maps
+    // explicitly, and wrap longitude in the shader so NPOT textures also work
+    // on devices which only support GL_CLAMP_TO_EDGE.
+    static GLuint program = 0;
+    if (!program || !glIsProgram(program)) {
+        const char *vertex =
+            "attribute vec2 position; attribute vec2 world;"
+            "varying vec2 coordinate;"
+            "void main(){coordinate=world;gl_Position=vec4(position,0.,1.);}";
+        const char *fragment =
+            "#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n"
+            "#else\nprecision mediump float;\n#endif\n"
+            "varying vec2 coordinate; uniform sampler2D month1,month2;"
+            "uniform vec4 grid1,grid2; uniform float weight,opacity;"
+            "vec4 sampleMonth(sampler2D image,vec4 grid){"
+            " float latitude=degrees(2.*atan(exp((coordinate.y-.5)*6.283185307))-1.570796327)-grid.w;"
+            " float y=(1.+log(tan(.785398163+clamp(latitude,-85.0511,85.0511)*.00872664626))/3.141592654)*.5;"
+            " vec2 uv=vec2((fract(coordinate.x-grid.z/360.)*grid.x+.5)/(grid.x+1.),y+.5/grid.y);"
+            " return texture2D(image,uv); }"
+            "void main(){"
+            " if(coordinate.y<0.||coordinate.y>1.)discard;"
+            " vec4 value=mix(sampleMonth(month2,grid2),sampleMonth(month1,grid1),weight);"
+            " gl_FragColor=vec4(value.rgb,value.a*opacity);}";
+        GLuint shaders[2] = {glCreateShader(GL_VERTEX_SHADER),
+                             glCreateShader(GL_FRAGMENT_SHADER)};
+        const char *sources[2] = {vertex, fragment};
+        bool compiled = true;
+        for (int i = 0; i < 2; ++i) {
+            glShaderSource(shaders[i], 1, &sources[i], NULL);
+            glCompileShader(shaders[i]);
+            GLint ok = 0;
+            glGetShaderiv(shaders[i], GL_COMPILE_STATUS, &ok);
+            if (!ok) {
+                char log[2048] = {};
+                glGetShaderInfoLog(shaders[i], sizeof(log), NULL, log);
+                wxLogMessage("climatology_pi: overlay shader: %s", wxString::FromUTF8(log));
+                compiled = false;
+            }
         }
-    
-    glEnable(texture_format);
-    glBindTexture(texture_format, O1.m_iTexture);
+        if (compiled) {
+            program = glCreateProgram();
+            glAttachShader(program, shaders[0]);
+            glAttachShader(program, shaders[1]);
+            glBindAttribLocation(program, 0, "position");
+            glBindAttribLocation(program, 1, "world");
+            glLinkProgram(program);
+            GLint ok = 0;
+            glGetProgramiv(program, GL_LINK_STATUS, &ok);
+            if (!ok) {
+                char log[2048] = {};
+                glGetProgramInfoLog(program, sizeof(log), NULL, log);
+                wxLogMessage("climatology_pi: overlay shader link: %s", wxString::FromUTF8(log));
+                glDeleteProgram(program);
+                program = 0;
+            }
+        }
+        for (int i = 0; i < 2; ++i) glDeleteShader(shaders[i]);
+        if (!program) return;
+    }
 
-    float uv[8];
-    float coords[8];
-    
-    //normal uv
-    uv[0] = lon[0]; uv[1] = lat[0]; uv[2] = lon[1]; uv[3] = lat[1];
-    uv[4] = lon[2]; uv[5] = lat[2]; uv[6] = lon[3]; uv[7] = lat[3];
-        
-    coords[0] = 0; coords[1] = 0; coords[2] = w; coords[3] = 0;
-    coords[4] = w; coords[5] = h; coords[6] = 0; coords[7] = h;
-    
-    glUseProgram( pi_texture_2DA_shader_program );
-    
-    // Get pointers to the attributes in the program.
-    GLint mPosAttrib = glGetAttribLocation( pi_texture_2DA_shader_program, "aPos" );
-    GLint mUvAttrib  = glGetAttribLocation( pi_texture_2DA_shader_program, "aUV" );
-    
-    // Set up the texture sampler to texture unit 0
-    GLint texUni = glGetUniformLocation( pi_texture_2DA_shader_program, "uTex" );
-    glUniform1i( texUni, 0 );
-    
-    // Disable VBO's (vertex buffer objects) for attributes.
-    glBindBuffer( GL_ARRAY_BUFFER, 0 );
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
-    
-    // Set the attribute mPosAttrib with the vertices in the screen coordinates...
-    glVertexAttribPointer( mPosAttrib, 2, GL_FLOAT, GL_FALSE, 0, coords );
-    // ... and enable it.
-    glEnableVertexAttribArray( mPosAttrib );
+    // Mercator coordinates are affine in canvas pixels, including rotation.
+    // Sampling next to the centre avoids a dateline jump at the screen edges
+    // and supports views which contain more than one copy of the world.
+    const int cx = vp.pix_width / 2, cy = vp.pix_height / 2;
+    double world[3][2];
+    const wxPoint samples[3] = {wxPoint(cx, cy), wxPoint(cx+1, cy), wxPoint(cx, cy+1)};
+    for (int i = 0; i < 3; ++i) {
+        double latitude, longitude;
+        GetCanvasLLPix(&vp, samples[i], &latitude, &longitude);
+        longitude += 360 * floor((vp.clon-longitude+180)/360);
+        world[i][0] = longitude / 360;
+        const double sine = sin(deg2rad(latitude));
+        world[i][1] = .5 + log((1+sine)/(1-sine))/(4*M_PI);
+    }
+    const GLfloat positions[8] = {-1,1, 1,1, -1,-1, 1,-1};
+    const int pixels[8] = {0,0, vp.pix_width,0, 0,vp.pix_height, vp.pix_width,vp.pix_height};
+    GLfloat coordinates[8];
+    for (int i = 0; i < 4; ++i)
+        for (int j = 0; j < 2; ++j)
+            coordinates[2*i+j] = world[0][j] + (pixels[2*i]-cx)*(world[1][j]-world[0][j])
+                + (pixels[2*i+1]-cy)*(world[2][j]-world[0][j]);
 
-    float colorv[4] = {0, 0, 0, -(float)transparency};
-
-    GLint colloc = glGetUniformLocation(pi_texture_2DA_shader_program,"color");
-    glUniform4fv(colloc, 1, colorv);
-
-    // Set the attribute mUvAttrib with the vertices in the GL coordinates...
-    glVertexAttribPointer( mUvAttrib, 2, GL_FLOAT, GL_FALSE, 0, uv );
-    // ... and enable it.
-    glEnableVertexAttribArray( mUvAttrib );
-    
-    // Rotate 
-    float angle = 0;
-    mat4x4 I, Q;
-    mat4x4_identity(I);
-    mat4x4_rotate_Z(Q, I, angle);
-    
-    // Translate
-    Q[3][0] = 0;
-    Q[3][1] = 0;
-    
-    GLint matloc = glGetUniformLocation(pi_texture_2DA_shader_program,"TransformMatrix");
-    glUniformMatrix4fv( matloc, 1, GL_FALSE, (const GLfloat*)Q); 
-    
-    // Select the active texture unit.
-    glActiveTexture( GL_TEXTURE0 );
-
-    float co1[8];
-    co1[0] = coords[0];
-    co1[1] = coords[1];
-    co1[2] = coords[2];
-    co1[3] = coords[3];
-    co1[4] = coords[6];
-    co1[5] = coords[7];
-    co1[6] = coords[4];
-    co1[7] = coords[5];
-    
-    float tco1[8];
-    tco1[0] = uv[0];
-    tco1[1] = uv[1];
-    tco1[2] = uv[2];
-    tco1[3] = uv[3];
-    tco1[4] = uv[6];
-    tco1[5] = uv[7];
-    tco1[6] = uv[4];
-    tco1[7] = uv[5];
-    
-    glVertexAttribPointer( mPosAttrib, 2, GL_FLOAT, GL_FALSE, 0, co1 );
-    glVertexAttribPointer( mUvAttrib, 2, GL_FLOAT, GL_FALSE, 0, tco1 );
-    
+    GLint oldProgram, oldBuffer, oldActive, oldTextures[2];
+    glGetIntegerv(GL_CURRENT_PROGRAM, &oldProgram);
+    glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &oldBuffer);
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &oldActive);
+    struct AttributeState {
+        GLint enabled, size, type, normalized, stride, buffer;
+        void *pointer;
+    } attributes[2];
+    for (int i = 0; i < 2; ++i) {
+        glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &attributes[i].enabled);
+        glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_SIZE, &attributes[i].size);
+        glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_TYPE, &attributes[i].type);
+        glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_NORMALIZED, &attributes[i].normalized);
+        glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_STRIDE, &attributes[i].stride);
+        glGetVertexAttribiv(i, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &attributes[i].buffer);
+        glGetVertexAttribPointerv(i, GL_VERTEX_ATTRIB_ARRAY_POINTER, &attributes[i].pointer);
+        glActiveTexture(GL_TEXTURE0+i);
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldTextures[i]);
+        glBindTexture(GL_TEXTURE_2D, i ? O2.m_iTexture : O1.m_iTexture);
+    }
+    glUseProgram(program);
+    glUniform1i(glGetUniformLocation(program, "month1"), 0);
+    glUniform1i(glGetUniformLocation(program, "month2"), 1);
+    glUniform4f(glGetUniformLocation(program, "grid1"), O1.m_width, O1.m_height, O1.m_lonoff, O1.m_latoff);
+    glUniform4f(glGetUniformLocation(program, "grid2"), O2.m_width, O2.m_height, O2.m_lonoff, O2.m_latoff);
+    glUniform1f(glGetUniformLocation(program, "weight"), dpos);
+    glUniform1f(glGetUniformLocation(program, "opacity"), 1-transparency);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, positions);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, coordinates);
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    
-    glDisable(texture_format);
-#endif
+    for (int i = 0; i < 2; ++i) {
+        glBindBuffer(GL_ARRAY_BUFFER, attributes[i].buffer);
+        glVertexAttribPointer(i, attributes[i].size, attributes[i].type,
+            attributes[i].normalized, attributes[i].stride, attributes[i].pointer);
+        if (!attributes[i].enabled) glDisableVertexAttribArray(i);
+        glActiveTexture(GL_TEXTURE0+i);
+        glBindTexture(GL_TEXTURE_2D, oldTextures[i]);
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, oldBuffer);
+    glActiveTexture(oldActive);
+    glUseProgram(oldProgram);
 #else
     int multitexturing;
     if(&O1 == &O2)
@@ -2879,8 +2905,11 @@ static void QueryGL()
     else
         texture_format = 0; // overlays disabled without npot support
 
-#ifdef USE_ANDROID_GLES2
-    s_bnoglrepeat = false; // supported on gles2 thankfully
+#ifdef __ANDROID__
+    // GLES2 guarantees NPOT textures with clamp-to-edge; longitude wrapping
+    // is done in our fragment shader, without requiring the NPOT extension.
+    texture_format = GL_TEXTURE_2D;
+    s_bnoglrepeat = true;
 #endif
 }
 

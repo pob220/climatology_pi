@@ -249,6 +249,15 @@ if(BUILD_TESTING)
   target_include_directories(climatology_provider_xlib_tests PRIVATE include)
   target_compile_definitions(climatology_provider_xlib_tests PRIVATE Status=int)
   add_test(NAME climatology_provider_xlib COMMAND climatology_provider_xlib_tests)
+  # These regression tests use assert(), including in Release package builds.
+  foreach(test_target climatology_math_tests climatology_api_tests
+          climatology_provider_api_tests climatology_provider_xlib_tests)
+    if(MSVC)
+      target_compile_options(${test_target} PRIVATE /UNDEBUG)
+    else()
+      target_compile_options(${test_target} PRIVATE -UNDEBUG)
+    endif()
+  endforeach()
 endif()
 
 ##==============================================================
