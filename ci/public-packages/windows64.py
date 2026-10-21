@@ -149,6 +149,7 @@ def main():
     work = WORK / 'build'
     # API 1.18 vendors an x86 import library. Use exports from the pinned x64 host.
     shutil.copy2(sdk / 'opencpn.lib', ROOT / 'opencpn-libs/api-18/msvc-wx32/opencpn.lib')
+    shutil.copy2(sdk / 'z.lib', ROOT / 'opencpn-libs/zlib/win/zlib1.lib')
     run('cmake', '-S', ROOT, '-B', work, '-G', 'Visual Studio 17 2022', '-A', 'x64',
         '-DCMAKE_SYSTEM_VERSION=10.0', '-DCMAKE_BUILD_TYPE=Release', '-DBUILD_TESTING=ON',
         '-DCMAKE_POLICY_VERSION_MINIMUM=3.5',

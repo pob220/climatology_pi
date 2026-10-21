@@ -265,8 +265,8 @@ ClimatologyConfigDialog::ClimatologyConfigDialog(ClimatologyDialog *parent)
     ClimatologyTouchControls(this, ClimatologyTouchFont());
     SetMinSize(wxSize(240, 240));
     const wxSize screen = wxGetDisplaySize();
-    const wxSize best = GetSizer()->CalcMin();
-    SetSize(wxSize(wxMin(best.x, screen.x - 40), wxMin(best.y, screen.y - 120)));
+    SetSize(wxSize(wxMin(880, screen.x - 40), wxMin(900, screen.y - 120)));
+    Centre();
     Layout();
 #endif
 }

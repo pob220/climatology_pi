@@ -10,6 +10,7 @@
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
 #include <wx/spinctrl.h>
+#include <QtWidgets/QWidget>
 
 // Qt styles are applied after wxFormBuilder has cached desktop-sized controls.
 // Recalculate their text metrics and reserve a usable touch target afterwards.
@@ -18,10 +19,11 @@ inline void ClimatologyTouchControls(wxWindow* window, const wxFont& font) {
     for (wxWindowList::iterator it = window->GetChildren().begin();
          it != window->GetChildren().end(); ++it)
         ClimatologyTouchControls(*it, font);
+    window->GetHandle()->ensurePolished();
+    const QSize hint = window->GetHandle()->sizeHint();
     window->InvalidateBestSize();
     if (wxCheckBox* checkbox = dynamic_cast<wxCheckBox*>(window)) {
-        const int text_width = checkbox->GetTextExtent(checkbox->GetLabel()).x;
-        checkbox->SetMinSize(wxSize(text_width + 54, 48));
+        checkbox->SetMinSize(wxSize(wxMax(80, hint.width()), wxMax(48, hint.height())));
     } else if (dynamic_cast<wxChoice*>(window)) {
         window->SetMinSize(wxSize(150, 48));
     } else if (dynamic_cast<wxSpinCtrl*>(window)) {
@@ -29,9 +31,9 @@ inline void ClimatologyTouchControls(wxWindow* window, const wxFont& font) {
     } else if (dynamic_cast<wxSlider*>(window)) {
         window->SetMinSize(wxSize(180, 48));
     } else if (dynamic_cast<wxButton*>(window)) {
-        window->SetMinSize(wxSize(-1, 48));
+        window->SetMinSize(wxSize(wxMax(80, hint.width()), wxMax(48, hint.height())));
     } else if (dynamic_cast<wxTextCtrl*>(window)) {
-        window->SetMinSize(wxSize(90, 48));
+        window->SetMinSize(wxSize(120, 48));
     }
     if (wxScrolledWindow* scrolled = dynamic_cast<wxScrolledWindow*>(window)) {
         scrolled->SetScrollRate(12, 12);
