@@ -18,5 +18,5 @@ manifest = dict(id='org.opencpn.OpenCPN.Plugin.climatology', runtime='org.opencp
 open('flatpak-public.json','w').write(json.dumps(manifest,indent=2))
 PY
 flatpak-builder --user --force-clean --disable-rofiles-fuse flatpak-build flatpak-public.json
-python3 ci/public-packages/package.py --binary flatpak-build/files/lib/opencpn/libclimatology_pi.so --build-dir .flatpak-builder/build --kind flatpak --target "flatpak-$arch" --target-version "$sdk" --arch "$arch"
+python3 ci/public-packages/package.py --binary flatpak-build/files/lib/opencpn/libclimatology_pi.so --build-dir flatpak-build/files --kind flatpak --target "flatpak-$arch" --target-version "$sdk" --arch "$arch"
 for xml in public-packages/*.xml; do xmllint --noout --schema ci/public-packages/ocpn-plugin.xsd "$xml"; done

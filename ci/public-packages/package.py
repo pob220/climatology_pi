@@ -25,7 +25,9 @@ def digest(data):
 
 def make_package(args):
     binary = args.binary.read_bytes()
-    revision = subprocess.check_output(['git', '-C', str(SOURCE), 'rev-parse', 'HEAD'], text=True).strip()
+    packaging_revision = subprocess.check_output(['git', '-C', str(SOURCE), 'rev-parse', 'HEAD'], text=True).strip()
+    revision = args.binary_source_revision or packaging_revision
+    subprocess.run(['git', '-C', str(SOURCE), 'cat-file', '-e', revision + '^{commit}'], check=True)
     if binary[:4] == b'\x7fELF':
         machine = struct.unpack_from('<H', binary, 18)[0]
         expected = {'x86_64': 62, 'arm64': 183, 'aarch64': 183, 'armhf': 40}
@@ -107,9 +109,10 @@ def make_package(args):
         entries[destination] = mo.read_bytes()
     provenance = dict(schema='climatology-plugin-package-v1', plugin_version=VERSION,
                       dataset_version=manifest['dataset_version'], baseline_revision=BASELINE,
-                      source_revision=revision, target=args.target,
+                      source_revision=revision, packaging_revision=packaging_revision, target=args.target,
                       target_version=args.target_version, architecture=args.arch,
                       binary_sha256=digest(binary), dataset_outputs_verified=len(manifest['outputs']))
+    assert sum(n.endswith('.mo') for n in entries) >= 30, 'Translation catalogs are missing'
     entries[f'{data_root}/data/package-provenance.json'] = (json.dumps(provenance, indent=2) + '\n').encode()
     args.output.mkdir(parents=True, exist_ok=True)
     archive = args.output / f'{name}.tar.gz'
@@ -149,5 +152,6 @@ if __name__ == '__main__':
     parser.add_argument('--target-version', required=True)
     parser.add_argument('--arch', required=True)
     parser.add_argument('--api-version', default='1.18')
+    parser.add_argument('--binary-source-revision', help='Retained CI binary revision when only repackaging data/locales')
     parser.add_argument('--output', type=Path, default=Path('public-packages'))
     make_package(parser.parse_args())

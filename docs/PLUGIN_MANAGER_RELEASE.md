@@ -44,3 +44,11 @@ host texture, program, buffer and vertex attribute state after drawing.
 Download the matching tarball and use OpenCPN Options > Plugins > Import
 plugin. Publishing public assets does not add this release to OpenCPN's main
 catalogue. That requires a separately reviewed metadata submission.
+
+`collect.py` accepts explicit CI artifact directories and validates all archives
+before assembling the public assets, SHA256SUMS, a package index and a combined
+catalogue XML. It rejects missing translations, path traversal, native architecture
+mismatches, changed binaries, invalid metadata or changed scientific outputs.
+Flatpak locale catalogs are collected from the installed extension tree. Retained
+Flatpak binaries repackaged with the unchanged PO catalogs record both their
+original binary source revision and the packaging revision.
