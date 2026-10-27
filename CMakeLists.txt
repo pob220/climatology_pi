@@ -274,6 +274,16 @@ if (NOT OCPN_FLATPAK_CONFIG)
 
   add_subdirectory(opencpn-libs/api-${OCPN_API_VERSION_MINOR})
   target_link_libraries(${PACKAGE_NAME} ocpn::api)
+  if(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(CLIMATOLOGY_WINDOWS_IMPORT_LIBRARY "" CACHE FILEPATH
+        "Import library from the matching native OpenCPN Windows x64 host")
+    if(CLIMATOLOGY_WINDOWS_IMPORT_LIBRARY)
+      get_target_property(_climatology_api_target ocpn::api ALIASED_TARGET)
+      set_property(TARGET ${_climatology_api_target} PROPERTY INTERFACE_LINK_LIBRARIES
+                   "${CLIMATOLOGY_WINDOWS_IMPORT_LIBRARY}")
+    endif()
+    target_compile_options(${PACKAGE_NAME} PRIVATE /we4302 /we4311 /we4312)
+  endif()
 
   add_subdirectory(opencpn-libs/tinyxml)
   target_link_libraries(${PACKAGE_NAME} ocpn::tinyxml)
@@ -299,6 +309,12 @@ if (NOT OCPN_FLATPAK_CONFIG)
            SET(OPENCPN_IMPORT_LIB "../../${CMAKE_CFG_INTDIR}/${PARENT}")
                add_subdirectory(opencpn-libs/zlib)
                target_link_libraries(${PACKAGE_NAME} ocpn::zlib)
+               set(CLIMATOLOGY_WINDOWS_ZLIB_LIBRARY "" CACHE FILEPATH
+                   "Native zlib import library matching the selected host")
+               if(CLIMATOLOGY_WINDOWS_ZLIB_LIBRARY)
+                 set_property(TARGET _ZLIB_MSVC PROPERTY IMPORTED_LOCATION
+                              "${CLIMATOLOGY_WINDOWS_ZLIB_LIBRARY}")
+               endif()
        ELSE()
             #MINGW
             TARGET_LINK_LIBRARIES(${PACKAGE_NAME} "-lz")
