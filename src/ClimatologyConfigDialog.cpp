@@ -63,7 +63,7 @@ static const int unittype[ClimatologyOverlaySettings::SETTINGS_COUNT] = {0, 0, 1
 
 wxString ClimatologyConfigDialog::SettingName(int setting)
 {
-    return _(name_from_index[setting]);
+    return wxGetTranslation(name_from_index[setting]);
 }
 
 double ClimatologyOverlaySettings::CalibrationOffset(int setting)
@@ -244,7 +244,7 @@ ClimatologyConfigDialog::ClimatologyConfigDialog(ClimatologyDialog *parent)
 
     m_cDataType->Clear();
     for(int i=0; i<ClimatologyOverlaySettings::SETTINGS_COUNT; i++)
-        m_cDataType->Append(_(name_from_index[i]));
+        m_cDataType->Append(wxGetTranslation(name_from_index[i]));
 
     m_cDataType->SetSelection(m_lastdatatype);
     PopulateUnits(m_lastdatatype);
@@ -439,7 +439,7 @@ void ClimatologyConfigDialog::PopulateUnits(int settings)
 {
     m_cDataUnits->Clear();
     for(int i=0; !unit_names[unittype[settings]][i].empty(); i++)
-        m_cDataUnits->Append(_(unit_names[unittype[settings]][i]));
+        m_cDataUnits->Append(wxGetTranslation(unit_names[unittype[settings]][i]));
 }
 
 void ClimatologyConfigDialog::OnPageChanged( wxNotebookEvent& event )
