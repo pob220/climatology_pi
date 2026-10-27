@@ -312,7 +312,7 @@ if (NOT OCPN_FLATPAK_CONFIG)
                set(CLIMATOLOGY_WINDOWS_ZLIB_LIBRARY "" CACHE FILEPATH
                    "Native zlib import library matching the selected host")
                if(CLIMATOLOGY_WINDOWS_ZLIB_LIBRARY)
-                 set_property(TARGET _ZLIB_MSVC PROPERTY IMPORTED_LOCATION
+                 set_property(TARGET _ZLIB_IF PROPERTY INTERFACE_LINK_LIBRARIES
                               "${CLIMATOLOGY_WINDOWS_ZLIB_LIBRARY}")
                endif()
        ELSE()
