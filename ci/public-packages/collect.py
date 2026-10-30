@@ -11,8 +11,10 @@ import subprocess
 import tarfile
 import xml.etree.ElementTree as ET
 
+from windows_abi import validate as validate_windows_abi
+
 SOURCE = Path(__file__).resolve().parents[2]
-VERSION = '2.0.0.0'
+VERSION = '2.0.1.0'
 BASELINE = 'cd00282e6ea2784a6d78ccfe47fed713269ad87e'
 
 
@@ -42,6 +44,9 @@ def collect(roots, destination, expected):
         assert record['bytes'] == archive.stat().st_size
         assert record['plugin_version'] == VERSION and record['baseline_revision'] == BASELINE
         assert record['dataset_version'] == manifest['dataset_version']
+        if record['target'] == 'msvc-64':
+            assert record.get('wx_version') == '3.3.4', 'Legacy wx329 packages must stay outside the catalogue collection'
+            assert name.endswith('-wx334.tar.gz'), name
         subprocess.run(['xmllint', '--noout', '--schema', str(schema), str(metadata)], check=True, capture_output=True)
         plugin = ET.parse(metadata).getroot()
         assert plugin.findtext('version') == VERSION
@@ -81,6 +86,8 @@ def collect(roots, destination, expected):
             elif binary[:2] == b'MZ':
                 pe = struct.unpack_from('<I', binary, 0x3c)[0]
                 assert struct.unpack_from('<H', binary, pe+4)[0] == {'x86':0x14c, 'x86_64':0x8664}[arch]
+                if arch == 'x86_64':
+                    validate_windows_abi(binary, record['wx_version'])
             else:
                 assert arch == 'arm64;x86_64'
             assert sum(m.name.endswith('.mo') for m in members) == record['translations'] >= 30
@@ -91,7 +98,7 @@ def collect(roots, destination, expected):
         records.append(record)
         catalogue.append(plugin)
     ET.indent(catalogue)
-    (destination / 'climatology-2.0.0.0-catalogue.xml').write_bytes(ET.tostring(catalogue, encoding='utf-8', xml_declaration=True) + b'\n')
+    (destination / f'climatology-{VERSION}-catalogue.xml').write_bytes(ET.tostring(catalogue, encoding='utf-8', xml_declaration=True) + b'\n')
     (destination / 'package-index.json').write_text(json.dumps(dict(plugin_version=VERSION, dataset_version=manifest['dataset_version'], packages=records), indent=2) + '\n')
     checksums = [f'{sha(path.read_bytes())}  {path.name}' for path in sorted(destination.iterdir()) if path.is_file()]
     (destination / 'SHA256SUMS').write_text('\n'.join(checksums) + '\n')

@@ -1,4 +1,4 @@
-param([string]$HostRoot, [string]$Output)
+param([string]$HostRoot, [string]$Output, [string]$ExpectedVersion)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Windows.Forms
@@ -73,10 +73,20 @@ try {
  $names | Set-Content -Encoding utf8 (Join-Path $Output 'plugin-manager-text.txt')
  Capture 'plugin-manager-version.png'
  $joined = $names -join "`n"
- if ($joined -notmatch 'Climatology' -or $joined -notmatch '2\.0\.0') {
-  throw 'Plugin Manager does not display the expected Climatology 2.0.0 version'
+ if ($joined -notmatch 'Climatology' -or $joined -notmatch [regex]::Escape($ExpectedVersion)) {
+  throw "Plugin Manager does not display the expected Climatology $ExpectedVersion version"
  }
- @{passed=$true; expected_version='2.0.0'; displayed_text=$names; host='OpenCPN 5.14.2'} |
+ # Close Options before requesting a normal application shutdown.
+ foreach ($node in (Nodes)) {
+  if ($node.Current.Name -eq 'Cancel') {
+   try { $node.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); break } catch {}
+  }
+ }
+ & (Join-Path $HostRoot 'opencpn.exe') --remote --quit
+ if ($LASTEXITCODE -ne 0) { throw 'Remote quit request failed' }
+ if (-not $app.WaitForExit(30000)) { throw 'OpenCPN did not shut down normally' }
+ if ($app.ExitCode -ne 0) { throw "OpenCPN shutdown failed: $($app.ExitCode)" }
+ @{passed=$true; expected_version=$ExpectedVersion; displayed_text=$names; exit_code=$app.ExitCode} |
   ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 (Join-Path $Output 'version-result.json')
 } finally {
  try { Capture 'final.png' } catch {}

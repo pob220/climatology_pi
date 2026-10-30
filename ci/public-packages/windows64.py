@@ -1,4 +1,4 @@
-"""Build against the pinned upstream OpenCPN 5.14.2 AMD64 testing host.
+"""Build against a pinned upstream AMD64 host and its exact wxWidgets SDK.
 
 Generate import libraries from that host's actual export tables rather than
 reusing the x86 libraries shipped in opencpn-libs. The host is only extracted,
@@ -18,8 +18,14 @@ import urllib.request
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
-WORK = ROOT / '.windows64'
-ARTIFACTS = ROOT / 'artifacts/windows-x64'
+WX_VERSION = os.environ.get('CLIMATOLOGY_WX_VERSION', '3.3.4')
+SDK_FILES = {'3.3.4': 'windows64-sdk.json', '3.2.9': 'windows64-wx329-sdk.json'}
+if WX_VERSION not in SDK_FILES:
+    raise ValueError('Unsupported Windows wxWidgets SDK: ' + WX_VERSION)
+WORK = ROOT / ('.windows64' if WX_VERSION == '3.3.4' else '.windows64-wx329')
+ARTIFACTS = ROOT / 'artifacts' / ('windows-x64' if WX_VERSION == '3.3.4' else 'windows-x64-wx329')
+
+from windows_abi import validate as validate_windows_abi
 
 
 def run(*args, cwd=ROOT):
@@ -91,9 +97,10 @@ def import_library(image, destination):
 
 
 def prepare_sdk():
-    pin = json.loads((ROOT / 'ci/public-packages/windows64-sdk.json').read_text())
+    pin = json.loads((ROOT / 'ci/public-packages' / SDK_FILES[WX_VERSION]).read_text())
     cache = WORK / 'cache'
-    host_archive = cache / 'opencpn-5.14.2-x64.exe'
+    assert pin['wx_version'] == WX_VERSION
+    host_archive = cache / 'opencpn-x64.exe'
     download(pin['host_url'], host_archive, pin['host_sha256'])
     host = WORK / 'host'
     run('7z', 'x', '-y', '-o' + str(host), host_archive)
@@ -101,10 +108,10 @@ def prepare_sdk():
     sdk.mkdir(parents=True, exist_ok=True)
     host_exports = import_library(host / 'opencpn.exe', sdk / 'opencpn.lib')
     import_library(host / 'z.dll', sdk / 'z.lib')
-    wx = WORK / 'wxWidgets-3.2.9'
+    wx = WORK / ('wxWidgets-' + WX_VERSION)
     for filename, expected in pin['wx_archives'].items():
         path = cache / filename
-        download('https://github.com/wxWidgets/wxWidgets/releases/download/v3.2.9/' + filename,
+        download('https://github.com/wxWidgets/wxWidgets/releases/download/v' + WX_VERSION + '/' + filename,
                  path, expected)
         run('7z', 'x', '-y', '-o' + str(wx), path)
     wxlib = wx / 'lib/vc14x_x64_dll'
@@ -115,7 +122,7 @@ def prepare_sdk():
         if counterpart.is_file() and digest(image) != digest(counterpart):
             raise RuntimeError(f'Host/wxWidgets runtime mismatch: {image.name}')
     os.environ['PATH'] = str(host) + os.pathsep + str(wxlib) + os.pathsep + os.environ['PATH']
-    os.environ['WX_VER'] = '32'
+    os.environ['WX_VER'] = '32' if WX_VERSION == '3.2.9' else '33'
     os.environ['OCPN_TARGET'] = 'MSVC-x64'
     (ARTIFACTS / 'sdk-provenance.json').write_text(json.dumps(pin, indent=2) + '\n')
     return sdk, wx, wxlib, host_exports
@@ -125,21 +132,26 @@ def verify_host_imports(library, host_exports):
     pe_sections(library)
     text = subprocess.check_output(['dumpbin', '/imports', str(library)], text=True)
     (ARTIFACTS / 'plugin-imports.txt').write_text(text)
-    active = False
-    names = []
+    validate_windows_abi(library.read_bytes(), WX_VERSION)
+    dependencies = {}
+    active = None
     for line in text.splitlines():
         if line.strip().lower().endswith(('.dll', '.exe')):
-            active = line.strip().lower() == 'opencpn.exe'
+            active = line.strip().lower()
+            dependencies.setdefault(active, [])
         elif active:
             match = re.match(r'\s*[0-9A-Fa-f]+\s+(\S+)', line)
             if match and match[1].startswith('?'):
-                names.append(match[1])
-    if not names:
-        raise RuntimeError('No OpenCPN host imports were found')
-    missing = sorted(set(names) - host_exports.keys())
-    if missing:
-        raise RuntimeError(f'Imports missing from matched host: {missing}')
-    print(f'All {len(names)} OpenCPN imports resolve against upstream 5.14.2 x64', flush=True)
+                dependencies[active].append(match[1])
+    names = dependencies.get('opencpn.exe', [])
+    if not names or set(names) - host_exports.keys():
+        raise RuntimeError('Unresolved OpenCPN imports: ' + str(sorted(set(names) - host_exports.keys())))
+    for name, symbols in dependencies.items():
+        if name.startswith('wx'):
+            missing = set(symbols) - exports(WORK / 'host' / name).keys()
+            if missing:
+                raise RuntimeError('Unresolved wxWidgets imports in ' + name + ': ' + str(sorted(missing)))
+    print(f'All {len(names)} OpenCPN imports and wxWidgets {WX_VERSION} imports resolve', flush=True)
 
 
 
@@ -147,22 +159,22 @@ def main():
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
     sdk, wx, wxlib, host_exports = prepare_sdk()
     work = WORK / 'build'
-    # API 1.18 vendors an x86 import library. Use exports from the pinned x64 host.
-    shutil.copy2(sdk / 'opencpn.lib', ROOT / 'opencpn-libs/api-18/msvc-wx32/opencpn.lib')
-    shutil.copy2(sdk / 'z.lib', ROOT / 'opencpn-libs/zlib/win/zlib1.lib')
     run('cmake', '-S', ROOT, '-B', work, '-G', 'Visual Studio 17 2022', '-A', 'x64',
         '-DCMAKE_SYSTEM_VERSION=10.0', '-DCMAKE_BUILD_TYPE=Release', '-DBUILD_TESTING=ON',
         '-DCMAKE_POLICY_VERSION_MINIMUM=3.5',
         '-DwxWidgets_ROOT_DIR=' + str(wx), '-DwxWidgets_LIB_DIR=' + str(wxlib),
-        '-DwxWidgets_CONFIGURATION=mswu')
+        '-DwxWidgets_CONFIGURATION=mswu',
+        '-DCLIMATOLOGY_WINDOWS_IMPORT_LIBRARY=' + str(sdk / 'opencpn.lib'),
+        '-DCLIMATOLOGY_WINDOWS_ZLIB_LIBRARY=' + str(sdk / 'z.lib'))
     run('cmake', '--build', work, '--config', 'Release', '--parallel', '3')
     run('ctest', '--test-dir', work, '-C', 'Release', '--output-on-failure')
     library = work / 'Release/climatology_pi.dll'
     verify_host_imports(library, host_exports)
     run(sys.executable, ROOT / 'ci/public-packages/package.py', '--binary', library,
         '--build-dir', work, '--kind', 'windows', '--target', 'msvc-64',
-        '--target-version', '10', '--arch', 'x86_64')
-    archive = next((ROOT / 'public-packages').glob('*.tar.gz'))
+        '--target-version', '10', '--arch', 'x86_64', '--wx-version', WX_VERSION)
+    package_dir = ROOT / ('public-packages' if WX_VERSION == '3.3.4' else 'compatibility/windows-x64-wx329')
+    archive = next(package_dir.glob('*.tar.gz'))
     run(sys.executable, ROOT / 'ci/public-packages/windows-host.py', archive, WORK / 'host')
 
 if __name__ == '__main__':

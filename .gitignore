@@ -29,3 +29,6 @@ __pycache__/
 
 /.windows64/
 /artifacts/
+
+/.windows64-wx329/
+/compatibility/

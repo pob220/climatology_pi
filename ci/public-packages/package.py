@@ -11,8 +11,10 @@ import subprocess
 import tarfile
 import xml.etree.ElementTree as ET
 
-VERSION = '2.0.0.0'
-TAG = 'v2.0.0.0-modern-data'
+from windows_abi import validate as validate_windows_abi
+
+VERSION = '2.0.1.0'
+TAG = 'v2.0.1.0-modern-data'
 REPO = 'https://github.com/pob220/climatology_pi'
 BASELINE = 'cd00282e6ea2784a6d78ccfe47fed713269ad87e'
 SOURCE = Path(__file__).resolve().parents[2]
@@ -48,6 +50,9 @@ def make_package(args):
         pe = struct.unpack_from('<I', binary, 0x3c)[0]
         machine = struct.unpack_from('<H', binary, pe + 4)[0]
         assert machine == {'x86': 0x14c, 'x86_64': 0x8664}[args.arch]
+        if args.arch == 'x86_64':
+            assert args.wx_version, 'Windows x64 packages require an explicit wxWidgets version'
+            validate_windows_abi(binary, args.wx_version)
     elif args.kind != 'macos':
         raise ValueError('Unrecognised native library format')
     manifest = json.loads((SOURCE / 'data/dataset-manifest.json').read_text())
@@ -57,6 +62,8 @@ def make_package(args):
         assert len(content) == output['bytes'], output['file']
         assert digest(content) == output['sha256'], output['file']
     label = f'{args.target}-{args.target_version}-{args.arch.replace(";", "-")}'
+    if args.kind == 'windows' and args.arch == 'x86_64':
+        label += '-wx' + args.wx_version.replace('.', '')
     name = f'climatology_pi-{VERSION}_{label}'
     url = f'{REPO}/releases/download/{TAG}/{name}.tar.gz'
     plugin = ET.Element('plugin', version='1')
@@ -112,8 +119,14 @@ def make_package(args):
                       source_revision=revision, packaging_revision=packaging_revision, target=args.target,
                       target_version=args.target_version, architecture=args.arch,
                       binary_sha256=digest(binary), dataset_outputs_verified=len(manifest['outputs']))
+    if args.kind == 'windows' and args.arch == 'x86_64':
+        provenance['wx_version'] = args.wx_version
     assert sum(n.endswith('.mo') for n in entries) >= 30, 'Translation catalogs are missing'
     entries[f'{data_root}/data/package-provenance.json'] = (json.dumps(provenance, indent=2) + '\n').encode()
+    if args.output is None:
+        args.output = Path('compatibility/windows-x64-wx329' if
+                           args.kind == 'windows' and args.arch == 'x86_64' and
+                           args.wx_version == '3.2.9' else 'public-packages')
     args.output.mkdir(parents=True, exist_ok=True)
     archive = args.output / f'{name}.tar.gz'
     with archive.open('wb') as raw, gzip.GzipFile(filename='', mode='wb', fileobj=raw, mtime=EPOCH) as compressed:
@@ -152,6 +165,7 @@ if __name__ == '__main__':
     parser.add_argument('--target-version', required=True)
     parser.add_argument('--arch', required=True)
     parser.add_argument('--api-version', default='1.18')
+    parser.add_argument('--wx-version', choices=['3.2.9', '3.3.4'])
     parser.add_argument('--binary-source-revision', help='Retained CI binary revision when only repackaging data/locales')
-    parser.add_argument('--output', type=Path, default=Path('public-packages'))
+    parser.add_argument('--output', type=Path)
     make_package(parser.parse_args())
