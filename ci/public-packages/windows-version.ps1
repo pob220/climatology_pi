@@ -82,8 +82,8 @@ try {
    try { $node.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); break } catch {}
   }
  }
- & (Join-Path $HostRoot 'opencpn.exe') --remote --quit
- if ($LASTEXITCODE -ne 0) { throw 'Remote quit request failed' }
+ $quit = Start-Process -FilePath (Join-Path $HostRoot 'opencpn.exe') -ArgumentList '--remote','--quit' -WorkingDirectory $HostRoot -Wait -PassThru
+ if ($quit.ExitCode -ne 0) { throw "Remote quit request failed: $($quit.ExitCode)" }
  if (-not $app.WaitForExit(30000)) { throw 'OpenCPN did not shut down normally' }
  if ($app.ExitCode -ne 0) { throw "OpenCPN shutdown failed: $($app.ExitCode)" }
  @{passed=$true; expected_version=$ExpectedVersion; displayed_text=$names; exit_code=$app.ExitCode} |

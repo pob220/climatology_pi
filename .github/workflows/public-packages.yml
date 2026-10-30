@@ -206,7 +206,7 @@ jobs:
           path: |
             public-packages/
             compatibility/
-            artifacts/windows-x64/
+            artifacts/windows-x64*/
             artifacts/windows-version/
 
   version-display:
