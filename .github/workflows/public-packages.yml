@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       groups:
-        description: 'all, or comma-separated linux,windows,macos,android,flatpak,windows64'
+        description: 'all, selected platform groups, display, or validate retained packages'
         default: all
         type: string
       linux_images:
@@ -11,7 +11,7 @@ on:
         default: '["debian:bullseye", "debian:bookworm", "debian:trixie"]'
         type: string
       run_id:
-        description: Retained native-package build for the display-only checks
+        description: Retained native-package build for display or validation checks
         default: '39616246106'
         type: string
 permissions:
@@ -237,7 +237,7 @@ jobs:
           path: artifacts/windows-version/
 
   validate:
-    if: ${{ inputs.groups == 'all' }}
+    if: ${{ always() && (inputs.groups == 'validate' || (inputs.groups == 'all' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled'))) }}
     needs: [linux, windows, macos, android, flatpak, windows64]
     runs-on: ubuntu-24.04
     steps:
@@ -246,13 +246,15 @@ jobs:
         with:
           path: retained-packages
           pattern: '!windows-x64-wx3.2.9'
+          run-id: ${{ inputs.groups == 'validate' && inputs.run_id || github.run_id }}
+          github-token: ${{ github.token }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - run: sudo apt-get update -qq && sudo apt-get install -y libxml2-utils
       - name: Scientific pipeline regression tests
         run: |
-          python -m pip install numpy xarray scipy requests pytest
+          python -m pip install './tools/climatology_pipeline[source,test]' requests scipy
           PYTHONPATH=tools/climatology_pipeline python -m pytest tools/climatology_pipeline/tests -q
       - name: Reject Windows ABI mismatches and validate every complete package
         run: |
